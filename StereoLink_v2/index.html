@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>STEREO LINK — Broadcaster</title>
+  <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+  <style>
+    :root { --bg:#080b10; --panel:#10151d; --panel2:#151c26; --line:#273242; --muted:#8291a7; --text:#eaf0fa; --blue:#49a7ff; --cyan:#3fe0cd; --amber:#f3b75a; --red:#ff6f86; --green:#4ee4a4; }
+    * { box-sizing:border-box; }
+    html { background:var(--bg); }
+    body { margin:0; min-width:320px; min-height:100vh; overflow-y:auto; color:var(--text); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(900px 500px at 13% -10%, #173b5c55, transparent 70%), radial-gradient(700px 480px at 90% 4%, #103c3d44, transparent 75%), var(--bg); }
+    button, select, input { font:inherit; }
+    button { color:inherit; cursor:pointer; }
+    .shell { width:min(1440px, calc(100% - 32px)); margin:0 auto; padding:26px 0 48px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 0 25px; border-bottom:1px solid #202a38; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brandmark { width:34px; height:34px; display:grid; grid-template-columns:repeat(4, 1fr); gap:3px; align-items:center; padding:6px; border:1px solid #527ba5; border-radius:9px; background:linear-gradient(145deg,#1a3856,#0c121a); box-shadow:0 0 28px #3499ff22; }
+    .brandmark i { display:block; background:linear-gradient(#54d5ff,#1d72d9); border-radius:2px; } .brandmark i:nth-child(1){height:40%}.brandmark i:nth-child(2){height:80%}.brandmark i:nth-child(3){height:55%}.brandmark i:nth-child(4){height:100%}
+    .brand h1 { margin:0; letter-spacing:.16em; font-size:14px; font-weight:800; } .brand small { display:block; margin-top:2px; color:var(--muted); font-size:10px; font-weight:650; letter-spacing:.12em; }
+    .live-row { display:flex; gap:9px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .badge { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:999px; padding:7px 10px; font-size:11px; letter-spacing:.05em; font-weight:760; color:#b7c5d7; background:#101721; }
+    .badge i { width:7px; height:7px; border-radius:50%; background:#728197; } .badge.live i { background:var(--green); box-shadow:0 0 10px var(--green); } .badge.warning i {background:var(--amber)} .badge.error i {background:var(--red)}
+    .grid { display:grid; grid-template-columns:minmax(0, 1.45fr) minmax(330px, .75fr); gap:20px; padding-top:23px; }
+    .panel { overflow:hidden; border:1px solid var(--line); border-radius:15px; background:linear-gradient(145deg,#131923ee,#0e131bfa); box-shadow:0 16px 45px #00000030; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:59px; padding:14px 18px; border-bottom:1px solid var(--line); }
+    .eyebrow { margin:0 0 3px; color:#6c7d92; font-size:10px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+    .panel-title { margin:0; font-size:14px; letter-spacing:.02em; }
+    .preview { position:relative; min-height:428px; display:grid; place-items:center; background:linear-gradient(135deg,#090d12,#121b26); }
+    .preview video { width:100%; height:100%; max-height:590px; object-fit:contain; display:block; background:#05070a; }
+    .preview-empty { position:absolute; inset:0; display:grid; place-items:center; text-align:center; pointer-events:none; }
+    .preview-empty .screen-icon { width:58px; height:42px; margin:0 auto 13px; border:2px solid #5d7088; border-radius:7px; position:relative; } .screen-icon:after{content:""; position:absolute; height:2px; width:26px; left:14px; bottom:-9px; background:#5d7088;} .screen-icon:before{content:"";position:absolute;width:10px;height:7px;left:22px;bottom:-9px;border-left:2px solid #5d7088;border-right:2px solid #5d7088}
+    .preview-empty strong { display:block; font-size:14px; } .preview-empty span { display:block; margin-top:7px; color:var(--muted); font-size:12px; }
+    .preview-caption { position:absolute; inset:auto 14px 13px; display:flex; justify-content:space-between; gap:10px; pointer-events:none; }
+    .glass { padding:7px 10px; border:1px solid #7f99b333; border-radius:7px; background:#071019bb; color:#c8d9ec; font-size:10px; font-weight:720; letter-spacing:.07em; backdrop-filter:blur(8px); }
+    .side-stack { display:grid; align-content:start; gap:20px; }
+    .section { padding:18px; } .section + .section { border-top:1px solid var(--line); }
+    label { display:block; margin:0 0 8px; color:#9eacc0; font-size:11px; font-weight:750; letter-spacing:.045em; }
+    select, input[type=text] { width:100%; height:42px; padding:0 12px; border:1px solid #334155; outline:none; border-radius:8px; color:var(--text); background:#0a0f16; transition:border-color .15s, box-shadow .15s; } select:focus, input:focus { border-color:#4d9ddb; box-shadow:0 0 0 3px #2384d420; }
+    .row { display:flex; gap:10px; align-items:end; } .row > * { min-width:0; } .grow{flex:1}
+    .btn { min-height:42px; padding:0 13px; border:1px solid #3a4a60; border-radius:8px; color:#dce9f7; background:#172231; font-size:12px; font-weight:740; letter-spacing:.015em; transition:transform .15s, background .15s, border-color .15s; } .btn:hover:not(:disabled){transform:translateY(-1px);background:#213249;border-color:#56789d}.btn:disabled{opacity:.52;cursor:not-allowed}
+    .btn.primary { border-color:#3a97e7; background:linear-gradient(110deg,#176bc3,#278fd5); color:white; box-shadow:0 7px 20px #0873d544; } .btn.primary:hover:not(:disabled){background:linear-gradient(110deg,#1a7bda,#36a9e7)} .btn.danger { border-color:#8b4051; background:#32171f; color:#ffafbd; } .btn.ghost { background:transparent; }
+    .mode-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; } .mode { min-height:63px; padding:8px 5px; border:1px solid #2b3748; border-radius:8px; text-align:center; color:#9bacc0; background:#0b1017; font-size:10px; font-weight:750; line-height:1.45; } .mode b{display:block;color:#cbd8e7;font-size:15px}.mode.active { border-color:#328fdb; color:#c6e7ff; background:#12304a; box-shadow:inset 0 0 0 1px #2f83c066; }.mode.active b{color:#6fc7ff}
+    .meter-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; } .meter-card { padding:10px; border:1px solid #2a3545; border-radius:9px; background:#0a0f15; } .meter-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:10px;color:#8698ad;font-weight:800;letter-spacing:.08em}.meter-top b{color:#cedced}.meter-track{height:102px;position:relative;display:flex;align-items:flex-end;padding:3px;border-radius:4px;background:repeating-linear-gradient(to top,#16202b 0,#16202b 1px,transparent 1px,transparent 19px)}.meter-fill{width:100%;min-height:2px;border-radius:2px;background:linear-gradient(to top,#23c9bd 0%,#70e279 55%,#e7df58 76%,#ff757d 100%);transition:height .06s linear}.meter-readout { margin-top:7px; color:#678096;font-size:10px;text-align:right;font-variant-numeric:tabular-nums; }
+    .hint { margin:9px 0 0; color:#728399; font-size:11px; line-height:1.5; } .hint strong{color:#a8bad0}.small-status { min-height:18px; margin:9px 0 0; font-size:11px; color:#8da1b8; line-height:1.45; } .small-status.error{color:#ff9bac}.small-status.good{color:#78e6bb}
+    .start { width:100%; min-height:49px; margin-top:14px; border-radius:9px; font-size:13px; }.stream-data { display:none; margin-top:14px; padding:12px; border:1px solid #285473; border-radius:9px; background:#0b2030; }.stream-data.show{display:block}.stream-data label{color:#8fc8ee}.url-row{display:flex;gap:8px}.url-row input{height:37px;font-size:11px}.url-row .btn{min-height:37px;white-space:nowrap}
+    .listener-count { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:#0c1219; } .listener-count strong{font-size:20px;font-variant-numeric:tabular-nums;color:#7ce8c1}.listener-count span{font-size:11px;color:#8395aa;font-weight:700;letter-spacing:.04em}
+    .log { max-height:150px; overflow:auto; padding:11px 18px 15px; border-top:1px solid var(--line); font:11px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#7890a8; background:#0a0e14; } .log div+div{margin-top:3px}.log time{color:#485a70;margin-right:7px}.log .ok{color:#70dcb0}.log .fail{color:#ff98aa}.log .info{color:#88bce8}
+    .footer-note{margin:18px 2px 0;color:#66778b;font-size:11px;line-height:1.55}.footer-note b{color:#91a9c1}
+    @media(max-width:920px){.grid{grid-template-columns:1fr}.side-stack{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.side-stack>.panel:last-child{grid-column:1/-1}.preview{min-height:360px}} @media(max-width:620px){.shell{width:min(100% - 20px,1440px);padding-top:16px}.topbar{align-items:flex-start}.live-row{justify-content:flex-start}.grid{padding-top:14px}.side-stack{grid-template-columns:1fr}.side-stack>.panel:last-child{grid-column:auto}.preview{min-height:260px}.panel-head{padding:12px 14px}.section{padding:14px}.row{flex-wrap:wrap}.row>.btn{width:100%}.meter-track{height:76px}.url-row{flex-wrap:wrap}.url-row .btn{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brandmark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><h1>STEREO LINK</h1><small>P2P SESSION BROADCASTER</small></div></div>
+      <div class="live-row"><span id="secureBadge" class="badge"><i></i><span>DEVICE SETUP</span></span><span class="badge"><i></i><span id="codecBadge">OPUS · 48 kHz · STEREO</span></span></div>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Stage preview</p><h2 class="panel-title">Screen program</h2></div><button id="screenButton" class="btn">画面共有を選択</button></div>
+        <div class="preview">
+          <video id="screenPreview" autoplay muted playsinline></video>
+          <div id="previewEmpty" class="preview-empty"><div><div class="screen-icon"></div><strong>画面共有はまだ選択されていません</strong><span>Pro Tools などのウィンドウまたは画面を選択してください</span></div></div>
+          <div class="preview-caption"><span id="previewStatus" class="glass">PREVIEW STANDBY</span><span id="audioStatus" class="glass">AUDIO: WAITING</span></div>
+        </div>
+        <div class="listener-count"><strong id="listenerCount">0</strong><span>CONNECTED LISTENERS</span></div>
+        <div id="eventLog" class="log" aria-live="polite"><div><time>--:--:--</time><span class="info">ステージング環境を初期化しています…</span></div></div>
+      </section>
+
+      <aside class="side-stack">
+        <section class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Audio input</p><h2 class="panel-title">Stereo source & meters</h2></div><span id="audioBadge" class="badge"><i></i><span>NO INPUT</span></span></div>
+          <div class="section">
+            <label for="audioDevice">オーディオ入力デバイス</label>
+            <div class="row"><select id="audioDevice" class="grow" disabled><option>権限を確認中…</option></select><button id="refreshDevices" class="btn" title="デバイス一覧を更新">更新</button></div>
+            <div class="meter-grid" style="margin-top:14px"><div class="meter-card"><div class="meter-top"><b>LEFT</b><span>L</span></div><div class="meter-track"><div id="meterL" class="meter-fill"></div></div><div id="dbL" class="meter-readout">−∞ dB</div></div><div class="meter-card"><div class="meter-top"><b>RIGHT</b><span>R</span></div><div class="meter-track"><div id="meterR" class="meter-fill"></div></div><div id="dbR" class="meter-readout">−∞ dB</div></div></div>
+            <button id="audioTestButton" class="btn ghost" style="width:100%;margin-top:12px">音声テストを開始</button>
+            <p id="deviceMessage" class="small-status">マイク権限を許可すると、RME 等の入力デバイスを選択できます。</p>
+            <p class="hint"><strong>Signal path:</strong> Web Audio API で L/R を明示的にマージし、2 チャンネルの送信ストリームを生成します。</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Session control</p><h2 class="panel-title">Room & delivery mode</h2></div><span id="broadcastBadge" class="badge"><i></i><span>OFFLINE</span></span></div>
+          <div class="section">
+            <label>配信モード</label>
+            <div id="modeGrid" class="mode-grid"><button class="mode active" data-mode="av"><b>▣ + ◖◗</b>映像＋音声</button><button class="mode" data-mode="video"><b>▣</b>映像のみ</button><button class="mode" data-mode="audio"><b>◖◗</b>音声のみ</button></div>
+            <div style="margin-top:15px"><label for="roomId">ルーム ID</label><input id="roomId" type="text" spellcheck="false" autocomplete="off"></div>
+            <p id="broadcastMessage" class="small-status">配信開始前に入力と画面を確認してください。</p>
+            <button id="startButton" class="btn primary start">配信開始 <span style="opacity:.72">(Start Streaming)</span></button>
+            <button id="stopButton" class="btn danger start" style="display:none">配信を終了</button>
+            <div id="shareBox" class="stream-data"><label for="shareUrl">LISTENER URL</label><div class="url-row"><input id="shareUrl" type="text" readonly><button id="copyButton" class="btn">URLをコピー</button></div></div>
+          </div>
+        </section>
+      </aside>
+    </div>
+    <p class="footer-note"><b>Direct P2P:</b> シグナリングには PeerJS Cloud を使用します。映像・音声はブラウザ間で直接送信されます。ネットワーク環境によっては TURN 非対応のため接続できないことがあります。</p>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+  const PEER_OPTIONS = { host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 1 };
+  const $ = (id) => document.getElementById(id);
+  const ui = {
+    audioDevice: $('audioDevice'), refreshDevices: $('refreshDevices'), audioTest: $('audioTestButton'),
+    screenButton: $('screenButton'), screenPreview: $('screenPreview'), previewEmpty: $('previewEmpty'), previewStatus: $('previewStatus'), audioStatus: $('audioStatus'),
+    meterL: $('meterL'), meterR: $('meterR'), dbL: $('dbL'), dbR: $('dbR'), audioBadge: $('audioBadge'), deviceMessage: $('deviceMessage'),
+    roomId: $('roomId'), modeGrid: $('modeGrid'), start: $('startButton'), stop: $('stopButton'), broadcastMessage: $('broadcastMessage'), broadcastBadge: $('broadcastBadge'),
+    secureBadge: $('secureBadge'), shareBox: $('shareBox'), shareUrl: $('shareUrl'), copy: $('copyButton'), listenerCount: $('listenerCount'), log: $('eventLog')
+  };
+  const state = {
+    mode: 'av', audioContext: null, audioPipeline: null, silentDestination: null, blackVideo: null,
+    displayStream: null, peer: null, broadcasting: false, outboundStream: null,
+    listenerCalls: new Map(), dataConnections: new Map(), testActive: false
+  };
+
+  function randomRoomId() {
+    // 128 bits of entropy: every broadcast start receives a new bearer URL.
+    const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+    let token = '';
+    for (const byte of bytes) token += byte.toString(16).padStart(2, '0');
+    return `mix-${token}`;
+  }
+  ui.roomId.value = randomRoomId();
+
+  function log(message, kind = 'info') {
+    const entry = document.createElement('div');
+    const now = new Date().toLocaleTimeString('ja-JP', { hour12:false });
+    entry.innerHTML = `<time>${now}</time><span class="${kind}"></span>`;
+    entry.querySelector('span').textContent = message;
+    ui.log.prepend(entry); while (ui.log.children.length > 40) ui.log.lastElementChild.remove();
+  }
+  function setBadge(el, text, tone = '') { el.className = `badge ${tone}`; el.querySelector('span').textContent = text; }
+  function setMessage(el, text, kind = '') { el.className = `small-status ${kind}`; el.textContent = text; }
+  function isAudioOn() { return state.mode === 'av' || state.mode === 'audio'; }
+  function isVideoOn() { return state.mode === 'av' || state.mode === 'video'; }
+  function friendlyError(error) {
+    const name = error && error.name ? error.name : '';
+    if (name === 'NotAllowedError') return 'デバイス権限が拒否されました。ブラウザのアドレスバーからマイク／画面共有を許可してください。';
+    if (name === 'NotFoundError') return '選択可能な入力デバイスが見つかりません。';
+    if (name === 'NotReadableError') return '入力デバイスを使用できません。他の DAW またはアプリが排他的に使用していないか確認してください。';
+    if (name === 'AbortError') return 'デバイスの選択がキャンセルされました。';
+    return error && error.message ? error.message : '予期しないエラーが発生しました。';
+  }
+
+  // SDP is edited line-by-line; no regex replacement is used. The transform runs for an
+  // outgoing local description at each endpoint, so the peer receives the transformed remote SDP too.
+  function enforceStereoOpus(sdp) {
+    if (typeof sdp !== 'string' || !sdp) return sdp;
+    const separator = sdp.includes('\r\n') ? '\r\n' : '\n';
+    const lines = sdp.split(separator);
+    const audioPayloads = new Set();
+    let insideAudio = false;
+    for (const line of lines) {
+      if (line.startsWith('m=')) {
+        insideAudio = line.startsWith('m=audio ');
+        if (insideAudio) {
+          const parts = line.split(' ');
+          for (let i = 3; i < parts.length; i += 1) if (parts[i]) audioPayloads.add(parts[i]);
+        }
+      }
+    }
+    const opusPayloads = new Set();
+    for (const line of lines) {
+      if (!line.startsWith('a=rtpmap:')) continue;
+      const body = line.slice('a=rtpmap:'.length);
+      const space = body.indexOf(' '); if (space < 1) continue;
+      const payload = body.slice(0, space);
+      const codec = body.slice(space + 1).toLowerCase();
+      if (audioPayloads.has(payload) && codec.startsWith('opus/48000')) opusPayloads.add(payload);
+    }
+    for (const payload of opusPayloads) {
+      const prefix = `a=fmtp:${payload} `;
+      const desired = [['stereo','1'], ['sprop-stereo','1'], ['maxaveragebitrate','320000'], ['cbr','1']];
+      let fmtpIndex = lines.findIndex((line) => line.startsWith(prefix));
+      if (fmtpIndex >= 0) {
+        const values = [];
+        for (const part of lines[fmtpIndex].slice(prefix.length).split(';')) {
+          const trimmed = part.trim(); if (!trimmed) continue;
+          const eq = trimmed.indexOf('='); const key = (eq < 0 ? trimmed : trimmed.slice(0, eq)).trim().toLowerCase();
+          if (!['stereo','sprop-stereo','maxaveragebitrate','cbr'].includes(key)) values.push(trimmed);
+        }
+        for (const [key, value] of desired) values.push(`${key}=${value}`);
+        lines[fmtpIndex] = prefix + values.join(';');
+      } else {
+        const rtpIndex = lines.findIndex((line) => line.startsWith(`a=rtpmap:${payload} `));
+        const insertAt = rtpIndex >= 0 ? rtpIndex + 1 : lines.length - 1;
+        lines.splice(insertAt, 0, prefix + desired.map(([key, value]) => `${key}=${value}`).join(';'));
+      }
+    }
+    return lines.join(separator);
+  }
+
+  function ensureAudioContext() {
+    if (!state.audioContext) state.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+    if (state.audioContext.state === 'suspended') state.audioContext.resume().catch(() => {});
+    return state.audioContext;
+  }
+
+  async function getAudioInput(deviceId) {
+    const constraints = {
+      audio: {
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+        channelCount: { ideal: 2 }, sampleRate: { ideal: 48000 },
+        ...(deviceId ? { deviceId: { exact: deviceId } } : {})
+      }, video: false
+    };
+    return navigator.mediaDevices.getUserMedia(constraints);
+  }
+
+  function stopPipeline(pipeline) {
+    if (!pipeline) return;
+    try { pipeline.source.disconnect(); pipeline.splitter.disconnect(); pipeline.merger.disconnect(); } catch (_) {}
+    pipeline.input.getTracks().forEach((track) => track.stop());
+  }
+
+  function buildStereoPipeline(input) {
+    const context = ensureAudioContext();
+    const source = context.createMediaStreamSource(input);
+    const splitter = context.createChannelSplitter(2);
+    const merger = context.createChannelMerger(2);
+    const destination = context.createMediaStreamDestination();
+    destination.channelCount = 2;
+    destination.channelCountMode = 'explicit';
+    destination.channelInterpretation = 'speakers';
+    const analyserL = context.createAnalyser(); const analyserR = context.createAnalyser();
+    analyserL.fftSize = 1024; analyserR.fftSize = 1024; analyserL.smoothingTimeConstant = .72; analyserR.smoothingTimeConstant = .72;
+    source.connect(splitter);
+    splitter.connect(merger, 0, 0); splitter.connect(merger, 1, 1);
+    splitter.connect(analyserL, 0); splitter.connect(analyserR, 1);
+    merger.connect(destination);
+    const settings = input.getAudioTracks()[0] && input.getAudioTracks()[0].getSettings ? input.getAudioTracks()[0].getSettings() : {};
+    return { input, source, splitter, merger, destination, analyserL, analyserR, track: destination.stream.getAudioTracks()[0], settings };
+  }
+
+  async function selectAudioDevice(deviceId) {
+    setMessage(ui.deviceMessage, '選択した入力を開いています…');
+    const nextInput = await getAudioInput(deviceId);
+    const nextPipeline = buildStereoPipeline(nextInput);
+    const previous = state.audioPipeline; state.audioPipeline = nextPipeline;
+    if (previous) stopPipeline(previous);
+    const settings = nextPipeline.settings;
+    const channels = settings.channelCount || 2;
+    setBadge(ui.audioBadge, `${channels} CH INPUT`, 'live');
+    ui.audioStatus.textContent = `AUDIO: ${channels} CH / 48 kHz TARGET`;
+    setMessage(ui.deviceMessage, `入力を接続しました。要求: 48 kHz / 2 ch、実際: ${settings.sampleRate || 'browser managed'} Hz / ${channels} ch。`, 'good');
+    log(`オーディオ入力を接続: ${ui.audioDevice.options[ui.audioDevice.selectedIndex]?.text || 'default'} (${channels} ch)`, 'ok');
+    if (state.broadcasting) await updateOutboundTracks('audio device change');
+  }
+
+  async function enumerateAudioDevices() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) throw new Error('このブラウザは MediaDevices API をサポートしていません。');
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const inputs = devices.filter((device) => device.kind === 'audioinput');
+    const selected = ui.audioDevice.value;
+    ui.audioDevice.innerHTML = '';
+    if (!inputs.length) ui.audioDevice.innerHTML = '<option value="">オーディオ入力が見つかりません</option>';
+    inputs.forEach((device, index) => {
+      const option = document.createElement('option'); option.value = device.deviceId; option.textContent = device.label || `Audio Input ${index + 1}`; ui.audioDevice.append(option);
+    });
+    if ([...ui.audioDevice.options].some((o) => o.value === selected)) ui.audioDevice.value = selected;
+    ui.audioDevice.disabled = !inputs.length;
+    return inputs;
+  }
+
+  async function initializeAudio() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('安全な HTTPS または localhost で開いてください。');
+    try {
+      const initial = await getAudioInput();
+      await enumerateAudioDevices();
+      const selected = ui.audioDevice.value || initial.getAudioTracks()[0]?.getSettings()?.deviceId;
+      if (selected && initial.getAudioTracks()[0]?.getSettings()?.deviceId !== selected) initial.getTracks().forEach(t => t.stop());
+      if (selected && initial.getAudioTracks()[0]?.getSettings()?.deviceId !== selected) await selectAudioDevice(selected);
+      else { state.audioPipeline = buildStereoPipeline(initial); const s = state.audioPipeline.settings; setBadge(ui.audioBadge, `${s.channelCount || 2} CH INPUT`, 'live'); ui.audioStatus.textContent = `AUDIO: ${s.channelCount || 2} CH / 48 kHz TARGET`; setMessage(ui.deviceMessage, '入力を準備しました。音声テストで L/R の入力を確認してください。', 'good'); log('マイク権限を取得し、ステレオ入力を初期化しました。', 'ok'); }
+    } catch (error) {
+      setBadge(ui.audioBadge, 'INPUT ERROR', 'error'); setMessage(ui.deviceMessage, friendlyError(error), 'error'); log(`音声入力エラー: ${friendlyError(error)}`, 'fail');
+    }
+  }
+
+  async function chooseScreen() {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: false });
+      const old = state.displayStream; state.displayStream = stream;
+      const track = stream.getVideoTracks()[0];
+      track.addEventListener('ended', () => { if (state.displayStream === stream) { state.displayStream = null; ui.previewEmpty.hidden = false; ui.previewStatus.textContent = 'SCREEN SHARE ENDED'; if (state.broadcasting) updateOutboundTracks('screen share ended'); log('画面共有が終了しました。黒画面トラックに切り替えました。', 'info'); } });
+      ui.screenPreview.srcObject = stream; await ui.screenPreview.play().catch(() => {}); ui.previewEmpty.hidden = true; ui.previewStatus.textContent = 'SCREEN PREVIEW ACTIVE';
+      log(`画面共有を選択: ${track.label || 'screen'}`, 'ok');
+      if (state.broadcasting) { await updateOutboundTracks('screen source change'); if (old) old.getTracks().forEach((t) => t.stop()); }
+      return stream;
+    } catch (error) { const message = friendlyError(error); setMessage(ui.broadcastMessage, message, 'error'); log(`画面共有エラー: ${message}`, 'fail'); throw error; }
+  }
+
+  function getSilentAudioTrack() {
+    if (state.silentDestination) return state.silentDestination.stream.getAudioTracks()[0];
+    const context = ensureAudioContext(); const destination = context.createMediaStreamDestination();
+    destination.channelCount = 2; destination.channelCountMode = 'explicit'; destination.channelInterpretation = 'speakers';
+    state.silentDestination = destination; return destination.stream.getAudioTracks()[0];
+  }
+
+  function getBlackVideoTrack() {
+    if (state.blackVideo) return state.blackVideo.track;
+    const canvas = document.createElement('canvas'); canvas.width = 1280; canvas.height = 720;
+    const ctx = canvas.getContext('2d');
+    const paint = () => { ctx.fillStyle = '#020304'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#18222d'; ctx.font = '600 30px system-ui'; ctx.textAlign = 'center'; ctx.fillText('STEREO LINK · VIDEO MUTED', canvas.width / 2, canvas.height / 2); };
+    paint(); const timer = setInterval(paint, 500); const stream = canvas.captureStream(5); const track = stream.getVideoTracks()[0];
+    state.blackVideo = { canvas, stream, track, timer }; return track;
+  }
+
+  function currentTracks() {
+    const audio = isAudioOn() && state.audioPipeline ? state.audioPipeline.track : getSilentAudioTrack();
+    const video = isVideoOn() && state.displayStream ? state.displayStream.getVideoTracks()[0] : getBlackVideoTrack();
+    return { audio, video };
+  }
+  function makeOutboundStream() { const tracks = currentTracks(); return new MediaStream([tracks.audio, tracks.video]); }
+  function modeLabel() { return state.mode === 'av' ? '映像＋音声' : state.mode === 'video' ? '映像のみ' : '音声のみ'; }
+  function statusPayload() { return { type:'broadcast-info', mode:state.mode, audioEnabled:isAudioOn(), videoEnabled:isVideoOn(), stereo:true, codec:'Opus 48 kHz Stereo / 320 kbps CBR target' }; }
+  function sendStatusToListeners() { for (const conn of state.dataConnections.values()) if (conn.open) conn.send(statusPayload()); }
+
+  async function tuneAudioSender(call) {
+    const pc = call && call.peerConnection; if (!pc || !pc.getSenders) return;
+    const sender = pc.getSenders().find((item) => item.track && item.track.kind === 'audio'); if (!sender) return;
+    try { const parameters = sender.getParameters(); if (!parameters.encodings || !parameters.encodings.length) parameters.encodings = [{}]; parameters.encodings.forEach((encoding) => { encoding.maxBitrate = 320000; encoding.priority = 'high'; }); await sender.setParameters(parameters); } catch (_) { /* SDP parameters remain in effect where supported. */ }
+  }
+
+  async function replaceCallTrack(call, kind, track) {
+    const pc = call && call.peerConnection; if (!pc || !pc.getSenders) return false;
+    const sender = pc.getSenders().find((item) => item.track && item.track.kind === kind);
+    if (!sender) return false;
+    await sender.replaceTrack(track); if (kind === 'audio') await tuneAudioSender(call); return true;
+  }
+
+  async function updateOutboundTracks(reason) {
+    if (!state.broadcasting) return;
+    const tracks = currentTracks(); state.outboundStream = new MediaStream([tracks.audio, tracks.video]);
+    const results = await Promise.allSettled([...state.listenerCalls.values()].flatMap((call) => [replaceCallTrack(call, 'audio', tracks.audio), replaceCallTrack(call, 'video', tracks.video)]));
+    sendStatusToListeners();
+    const failures = results.filter((r) => r.status === 'rejected').length;
+    log(`${reason}: ${state.listenerCalls.size} 接続の送信トラックを replaceTrack で更新しました${failures ? `（${failures} 件失敗）` : ''}。`, failures ? 'fail' : 'ok');
+  }
+
+  function updateCount() { ui.listenerCount.textContent = String(state.listenerCalls.size); }
+  function removeListener(peerId) { state.listenerCalls.delete(peerId); state.dataConnections.delete(peerId); updateCount(); }
+
+  function callListener(peerId) {
+    if (!state.peer || !state.broadcasting || state.listenerCalls.has(peerId)) return;
+    const call = state.peer.call(peerId, state.outboundStream, { metadata: statusPayload(), sdpTransform: enforceStereoOpus });
+    if (!call) { log(`リスナー ${peerId} への発信を作成できませんでした。`, 'fail'); return; }
+    state.listenerCalls.set(peerId, call); updateCount();
+    call.on('error', (error) => { log(`リスナー接続エラー: ${friendlyError(error)}`, 'fail'); removeListener(peerId); });
+    call.on('close', () => { if (state.listenerCalls.get(peerId) === call) { removeListener(peerId); log('リスナーが切断しました。', 'info'); } });
+    setTimeout(() => tuneAudioSender(call), 350);
+    log('リスナーへのステレオストリームを開始しました。', 'ok');
+  }
+
+  function handleListenerConnection(conn) {
+    conn.on('open', () => {
+      if (!state.broadcasting) { conn.send({ type:'error', message:'このルームは現在オフラインです。' }); conn.close(); return; }
+      state.dataConnections.set(conn.peer, conn); conn.send(statusPayload());
+      setTimeout(() => callListener(conn.peer), 80);
+    });
+    conn.on('close', () => { state.dataConnections.delete(conn.peer); });
+    conn.on('error', (error) => log(`データ接続エラー: ${friendlyError(error)}`, 'fail'));
+  }
+
+  function shareLink(room) {
+    // Resolve player.html relative to the page currently hosting index.html.
+    // This remains correct on Manus, GitHub Pages, Vercel, or a custom domain.
+    const listenerUrl = new URL('player.html', window.location.href);
+    listenerUrl.search = '';
+    listenerUrl.searchParams.set('room', room);
+    return listenerUrl.href;
+  }
+
+  function peerErrorMessage(error) {
+    const type = error && error.type;
+    if (type === 'unavailable-id') return 'このルーム ID はすでに使用中です。別の ID を指定してください。';
+    if (type === 'network' || type === 'disconnected') return 'PeerJS シグナリングサーバーに接続できません。ネットワークまたは後で再試行してください。';
+    if (type === 'ssl-unavailable') return 'HTTPS でページを開いてください。';
+    return friendlyError(error);
+  }
+
+  function setBroadcastUI(live) {
+    ui.start.style.display = live ? 'none' : ''; ui.stop.style.display = live ? '' : 'none'; ui.roomId.disabled = live; ui.shareBox.classList.toggle('show', live);
+    setBadge(ui.broadcastBadge, live ? 'LIVE' : 'OFFLINE', live ? 'live' : ''); setBadge(ui.secureBadge, live ? 'P2P LIVE' : 'DEVICE SETUP', live ? 'live' : '');
+  }
+
+  async function startBroadcast() {
+    if (state.broadcasting) return;
+    // Never reuse a previous room after stopping/restarting. The generated listener URL
+    // is valid only while this newly-created PeerJS room is alive.
+    const room = randomRoomId();
+    ui.roomId.value = room;
+    try {
+      if (isAudioOn() && !state.audioPipeline) await initializeAudio();
+      if (isAudioOn() && !state.audioPipeline) throw new Error('ステレオ入力を初期化できませんでした。');
+      if (isVideoOn() && !state.displayStream) await chooseScreen();
+      if (isVideoOn() && !state.displayStream) throw new Error('画面共有が選択されていません。');
+      state.outboundStream = makeOutboundStream();
+      ui.start.disabled = true; ui.start.textContent = 'PeerJS に接続中…'; setMessage(ui.broadcastMessage, 'シグナリングに接続し、ルームを開いています…');
+      const peer = new Peer(room, PEER_OPTIONS); state.peer = peer;
+      peer.on('open', (id) => { if (state.peer !== peer) return; state.broadcasting = true; ui.shareUrl.value = shareLink(id); setBroadcastUI(true); setMessage(ui.broadcastMessage, '配信中です。リスナー URL を共有してください。', 'good'); log(`ルーム ${id} を開きました。リスナーを待機しています。`, 'ok'); });
+      peer.on('connection', handleListenerConnection);
+      peer.on('error', (error) => { const message = peerErrorMessage(error); log(`PeerJS エラー: ${message}`, 'fail'); setMessage(ui.broadcastMessage, message, 'error'); if (!state.broadcasting) { ui.start.disabled = false; ui.start.innerHTML = '配信開始 <span style="opacity:.72">(Start Streaming)</span>'; } });
+      peer.on('disconnected', () => { if (state.broadcasting) { setMessage(ui.broadcastMessage, 'シグナリング接続が失われました。配信を終了してください。', 'error'); log('PeerJS シグナリングが切断されました。', 'fail'); } });
+    } catch (error) { setMessage(ui.broadcastMessage, friendlyError(error), 'error'); ui.start.disabled = false; ui.start.innerHTML = '配信開始 <span style="opacity:.72">(Start Streaming)</span>'; }
+  }
+
+  function stopBroadcast() {
+    for (const call of state.listenerCalls.values()) call.close(); for (const conn of state.dataConnections.values()) conn.close();
+    state.listenerCalls.clear(); state.dataConnections.clear(); updateCount();
+    if (state.peer) { state.peer.destroy(); state.peer = null; }
+    state.broadcasting = false; state.outboundStream = null; setBroadcastUI(false); ui.start.disabled = false; ui.start.innerHTML = '配信開始 <span style="opacity:.72">(Start Streaming)</span>';
+    setMessage(ui.broadcastMessage, '配信を終了しました。入力・画面はステージング用に維持されています。'); log('配信を終了しました。', 'info');
+  }
+
+  function setMode(mode) {
+    state.mode = mode; [...ui.modeGrid.querySelectorAll('.mode')].forEach((button) => button.classList.toggle('active', button.dataset.mode === mode));
+    if (mode === 'audio') ui.previewStatus.textContent = 'AUDIO-ONLY · BLACK VIDEO TRACK';
+    else if (!state.displayStream) ui.previewStatus.textContent = 'SCREEN SHARE REQUIRED';
+    if (state.broadcasting) updateOutboundTracks(`モードを「${modeLabel()}」へ変更`);
+  }
+
+  function dbFromAnalyser(analyser) {
+    if (!analyser) return { percent: 0, db: -Infinity };
+    const samples = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(samples); let sum = 0;
+    for (const value of samples) { const normalized = (value - 128) / 128; sum += normalized * normalized; }
+    const rms = Math.sqrt(sum / samples.length); const db = rms > 0.00001 ? 20 * Math.log10(rms) : -Infinity;
+    return { percent: Math.max(1.5, Math.min(100, ((db + 60) / 60) * 100)), db };
+  }
+  function renderMeters() {
+    const left = dbFromAnalyser(state.audioPipeline && state.audioPipeline.analyserL), right = dbFromAnalyser(state.audioPipeline && state.audioPipeline.analyserR);
+    ui.meterL.style.height = `${left.percent}%`; ui.meterR.style.height = `${right.percent}%`;
+    ui.dbL.textContent = Number.isFinite(left.db) ? `${left.db.toFixed(1)} dB` : '−∞ dB'; ui.dbR.textContent = Number.isFinite(right.db) ? `${right.db.toFixed(1)} dB` : '−∞ dB';
+    requestAnimationFrame(renderMeters);
+  }
+
+  ui.screenButton.addEventListener('click', chooseScreen);
+  ui.refreshDevices.addEventListener('click', async () => { try { await enumerateAudioDevices(); setMessage(ui.deviceMessage, '入力デバイス一覧を更新しました。', 'good'); } catch (error) { setMessage(ui.deviceMessage, friendlyError(error), 'error'); } });
+  ui.audioDevice.addEventListener('change', async () => { try { await selectAudioDevice(ui.audioDevice.value); } catch (error) { setMessage(ui.deviceMessage, friendlyError(error), 'error'); } });
+  ui.audioTest.addEventListener('click', () => { state.testActive = !state.testActive; ensureAudioContext(); ui.audioTest.textContent = state.testActive ? '音声テスト中 — 入力を確認' : '音声テストを開始'; setMessage(ui.deviceMessage, state.testActive ? 'L/R VU メーターを確認してください。テスト音声は出力されません。' : '入力モニターを停止しました。'); });
+  ui.modeGrid.addEventListener('click', (event) => { const target = event.target.closest('[data-mode]'); if (target) setMode(target.dataset.mode); });
+  ui.start.addEventListener('click', startBroadcast); ui.stop.addEventListener('click', stopBroadcast);
+  ui.copy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(ui.shareUrl.value); ui.copy.textContent = 'コピーしました'; setTimeout(() => { ui.copy.textContent = 'URLをコピー'; }, 1600); } catch (_) { ui.shareUrl.select(); document.execCommand('copy'); ui.copy.textContent = 'コピーしました'; } });
+  navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => enumerateAudioDevices().catch(() => {}));
+  if (!window.isSecureContext && location.hostname !== 'localhost') { setBadge(ui.secureBadge, 'HTTPS REQUIRED', 'error'); setMessage(ui.deviceMessage, '画面共有とマイク入力には HTTPS または localhost が必要です。', 'error'); }
+  renderMeters(); initializeAudio();
+})();
+</script>
+</body>
+</html>
