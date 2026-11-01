@@ -45,7 +45,7 @@
     .meter-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; } .meter-card { padding:10px; border:1px solid #2a3545; border-radius:9px; background:#0a0f15; } .meter-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:10px;color:#8698ad;font-weight:800;letter-spacing:.08em}.meter-top b{color:#cedced}.meter-track{height:102px;position:relative;display:flex;align-items:flex-end;padding:3px;border-radius:4px;background:repeating-linear-gradient(to top,#16202b 0,#16202b 1px,transparent 1px,transparent 19px)}.meter-fill{width:100%;min-height:2px;border-radius:2px;background:linear-gradient(to top,#23c9bd 0%,#70e279 55%,#e7df58 76%,#ff757d 100%);transition:height .06s linear}.meter-readout { margin-top:7px; color:#678096;font-size:10px;text-align:right;font-variant-numeric:tabular-nums; }
     .hint { margin:9px 0 0; color:#728399; font-size:11px; line-height:1.5; } .hint strong{color:#a8bad0}.small-status { min-height:18px; margin:9px 0 0; font-size:11px; color:#8da1b8; line-height:1.45; } .small-status.error{color:#ff9bac}.small-status.good{color:#78e6bb}
     .start { width:100%; min-height:49px; margin-top:14px; border-radius:9px; font-size:13px; }.stream-data { display:none; margin-top:14px; padding:12px; border:1px solid #285473; border-radius:9px; background:#0b2030; }.stream-data.show{display:block}.stream-data label{color:#8fc8ee}.url-row{display:flex;gap:8px}.url-row input{height:37px;font-size:11px}.url-row .btn{min-height:37px;white-space:nowrap}
-    .listener-count { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:#0c1219; } .listener-count strong{font-size:20px;font-variant-numeric:tabular-nums;color:#7ce8c1}.listener-count span{font-size:11px;color:#8395aa;font-weight:700;letter-spacing:.04em}
+    .listener-count { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:#0c1219; } .listener-count strong{font-size:20px;font-variant-numeric:tabular-nums;color:#7ce8c1}.listener-count span{font-size:11px;color:#8395aa;font-weight:700;letter-spacing:.04em}.listener-count .send-stats{margin-left:auto;text-align:right;font-weight:650;letter-spacing:.02em;font-variant-numeric:tabular-nums}.listener-count .send-stats.warn{color:var(--amber)}
     .log { max-height:150px; overflow:auto; padding:11px 18px 15px; border-top:1px solid var(--line); font:11px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#7890a8; background:#0a0e14; } .log div+div{margin-top:3px}.log time{color:#485a70;margin-right:7px}.log .ok{color:#70dcb0}.log .fail{color:#ff98aa}.log .info{color:#88bce8}
     .footer-note{margin:18px 2px 0;color:#66778b;font-size:11px;line-height:1.55}.footer-note b{color:#91a9c1}
     @media(max-width:920px){.grid{grid-template-columns:1fr}.side-stack{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.side-stack>.panel:last-child{grid-column:1/-1}.preview{min-height:360px}} @media(max-width:620px){.shell{width:min(100% - 20px,1440px);padding-top:16px}.topbar{align-items:flex-start}.live-row{justify-content:flex-start}.grid{padding-top:14px}.side-stack{grid-template-columns:1fr}.side-stack>.panel:last-child{grid-column:auto}.preview{min-height:260px}.panel-head{padding:12px 14px}.section{padding:14px}.row{flex-wrap:wrap}.row>.btn{width:100%}.meter-track{height:76px}.url-row{flex-wrap:wrap}.url-row .btn{width:100%}}
@@ -66,7 +66,7 @@
           <div id="previewEmpty" class="preview-empty"><div><div class="screen-icon"></div><strong>画面共有はまだ選択されていません</strong><span>Pro Tools などのウィンドウまたは画面を選択してください</span></div></div>
           <div class="preview-caption"><span id="previewStatus" class="glass">PREVIEW STANDBY</span><span id="audioStatus" class="glass">AUDIO: WAITING</span></div>
         </div>
-        <div class="listener-count"><strong id="listenerCount">0</strong><span>CONNECTED LISTENERS</span></div>
+        <div class="listener-count"><strong id="listenerCount">0</strong><span>CONNECTED LISTENERS</span><span id="sendStats" class="send-stats">送信統計: 待機中</span></div>
         <div id="eventLog" class="log" aria-live="polite"><div><time>--:--:--</time><span class="info">ステージング環境を初期化しています…</span></div></div>
       </section>
 
@@ -89,6 +89,11 @@
             <label>配信モード</label>
             <div id="modeGrid" class="mode-grid"><button class="mode active" data-mode="av"><b>▣ + ◖◗</b>映像＋音声</button><button class="mode" data-mode="video"><b>▣</b>映像のみ</button><button class="mode" data-mode="audio"><b>◖◗</b>音声のみ</button></div>
             <div style="margin-top:15px"><label for="roomId">ルーム ID</label><input id="roomId" type="text" spellcheck="false" autocomplete="off"></div>
+            <div class="row" style="margin-top:15px">
+              <div class="grow"><label for="uplinkSelect">上り回線の帯域（目安）</label><select id="uplinkSelect"><option value="3">3 Mbps</option><option value="5">5 Mbps</option><option value="10" selected>10 Mbps</option><option value="20">20 Mbps</option><option value="50">50 Mbps</option><option value="100">100 Mbps 以上</option></select></div>
+              <div class="grow"><label for="qualitySelect">映像の優先</label><select id="qualitySelect"><option value="smooth" selected>なめらかさ優先</option><option value="detail">文字の鮮明さ優先</option></select></div>
+            </div>
+            <p id="planHint" class="hint">リスナー数に応じて、1 人あたりの映像ビットレート・解像度を自動で配分します。</p>
             <p id="broadcastMessage" class="small-status">配信開始前に入力と画面を確認してください。</p>
             <button id="startButton" class="btn primary start">配信開始 <span style="opacity:.72">(Start Streaming)</span></button>
             <button id="stopButton" class="btn danger start" style="display:none">配信を終了</button>
@@ -110,7 +115,8 @@
     screenButton: $('screenButton'), screenPreview: $('screenPreview'), previewEmpty: $('previewEmpty'), previewStatus: $('previewStatus'), audioStatus: $('audioStatus'),
     meterL: $('meterL'), meterR: $('meterR'), dbL: $('dbL'), dbR: $('dbR'), audioBadge: $('audioBadge'), deviceMessage: $('deviceMessage'),
     roomId: $('roomId'), modeGrid: $('modeGrid'), start: $('startButton'), stop: $('stopButton'), broadcastMessage: $('broadcastMessage'), broadcastBadge: $('broadcastBadge'),
-    secureBadge: $('secureBadge'), shareBox: $('shareBox'), shareUrl: $('shareUrl'), copy: $('copyButton'), listenerCount: $('listenerCount'), log: $('eventLog')
+    secureBadge: $('secureBadge'), shareBox: $('shareBox'), shareUrl: $('shareUrl'), copy: $('copyButton'), listenerCount: $('listenerCount'), log: $('eventLog'),
+    uplink: $('uplinkSelect'), quality: $('qualitySelect'), planHint: $('planHint'), sendStats: $('sendStats')
   };
   const state = {
     mode: 'av', audioContext: null, audioPipeline: null, silentDestination: null, blackVideo: null,
@@ -283,9 +289,10 @@
 
   async function chooseScreen() {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: false });
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 30 }, width: { max: 1920 }, height: { max: 1080 } }, audio: false });
       const old = state.displayStream; state.displayStream = stream;
       const track = stream.getVideoTracks()[0];
+      applyContentHint(track);
       track.addEventListener('ended', () => { if (state.displayStream === stream) { state.displayStream = null; ui.previewEmpty.hidden = false; ui.previewStatus.textContent = 'SCREEN SHARE ENDED'; if (state.broadcasting) updateOutboundTracks('screen share ended'); log('画面共有が終了しました。黒画面トラックに切り替えました。', 'info'); } });
       ui.screenPreview.srcObject = stream; await ui.screenPreview.play().catch(() => {}); ui.previewEmpty.hidden = true; ui.previewStatus.textContent = 'SCREEN PREVIEW ACTIVE';
       log(`画面共有を選択: ${track.label || 'screen'}`, 'ok');
@@ -320,30 +327,122 @@
   function statusPayload() { return { type:'broadcast-info', mode:state.mode, audioEnabled:isAudioOn(), videoEnabled:isVideoOn(), stereo:true, codec:'Opus 48 kHz Stereo / 320 kbps CBR target' }; }
   function sendStatusToListeners() { for (const conn of state.dataConnections.values()) if (conn.open) conn.send(statusPayload()); }
 
-  async function tuneAudioSender(call) {
-    const pc = call && call.peerConnection; if (!pc || !pc.getSenders) return;
-    const sender = pc.getSenders().find((item) => item.track && item.track.kind === 'audio'); if (!sender) return;
-    try { const parameters = sender.getParameters(); if (!parameters.encodings || !parameters.encodings.length) parameters.encodings = [{}]; parameters.encodings.forEach((encoding) => { encoding.maxBitrate = 320000; encoding.priority = 'high'; }); await sender.setParameters(parameters); } catch (_) { /* SDP parameters remain in effect where supported. */ }
+  // ---- Video delivery planning -------------------------------------------------------
+  // Mesh P2P: the host encodes and uploads one independent copy per listener, so the
+  // upstream budget must be divided by the listener count. Without caps every sender
+  // competes for the same uplink, causing packet loss and frame drops (choppy video).
+  const AUDIO_BITRATE = 320000;
+  function applyContentHint(track) {
+    if (!track || !('contentHint' in track)) return;
+    // 'motion' => encoder keeps framerate and lowers resolution under load (smooth).
+    // 'detail'/'text' => keeps sharpness and drops frames under load (choppy but crisp).
+    try { track.contentHint = ui.quality.value === 'detail' ? 'detail' : 'motion'; } catch (_) {}
   }
+  function videoPlan() {
+    const listeners = Math.max(1, state.listenerCalls.size);
+    const uplink = Number(ui.uplink.value || 10) * 1e6;
+    const usable = uplink * 0.8; // headroom for overhead, retransmission and other traffic
+    const audioCost = isAudioOn() ? AUDIO_BITRATE * listeners : 0;
+    const smooth = ui.quality.value !== 'detail';
+    const ceiling = smooth ? 2500000 : 3000000;
+    const perListener = Math.max(150000, Math.min(ceiling, Math.floor((usable - audioCost) / listeners)));
+    const targetHeight = perListener >= 2000000 ? 1080 : perListener >= 1000000 ? 720 : perListener >= 500000 ? 540 : 360;
+    const fps = smooth ? (perListener >= 300000 ? 30 : 20) : (perListener >= 800000 ? 30 : 15);
+    return { listeners, perListener, targetHeight, fps, smooth, starved: (usable - audioCost) / listeners < 300000 };
+  }
+  function sourceVideoHeight() {
+    const track = isVideoOn() && state.displayStream ? state.displayStream.getVideoTracks()[0] : null;
+    const settings = track && track.getSettings ? track.getSettings() : {};
+    return settings.height || 720;
+  }
+  function renderPlanHint() {
+    const plan = videoPlan();
+    const kbps = Math.round(plan.perListener / 1000);
+    let text = `現在 ${state.listenerCalls.size} 人 → 1 人あたり映像 約 ${kbps} kbps / 最大 ${plan.targetHeight}p / ${plan.fps} fps で配信します。`;
+    if (plan.starved) text += ' ⚠ 上り帯域に対してリスナーが多すぎます。「映像のみ」モードや上り回線の増強を検討してください。';
+    ui.planHint.textContent = text;
+  }
+
+  // setParameters must not run concurrently on the same sender (transactionId conflicts),
+  // so every tuning request for a call is chained.
+  function queueTune(call) {
+    if (!call) return Promise.resolve();
+    call._tuneChain = (call._tuneChain || Promise.resolve()).then(() => tuneSenders(call)).catch(() => {});
+    return call._tuneChain;
+  }
+  async function tuneSenders(call) {
+    const pc = call && call.peerConnection; if (!pc || !pc.getSenders) return;
+    const plan = videoPlan();
+    for (const sender of pc.getSenders()) {
+      if (!sender.track) continue;
+      try {
+        const parameters = sender.getParameters();
+        if (!parameters.encodings || !parameters.encodings.length) parameters.encodings = [{}];
+        if (sender.track.kind === 'audio') {
+          parameters.encodings.forEach((encoding) => { encoding.maxBitrate = AUDIO_BITRATE; encoding.priority = 'high'; encoding.networkPriority = 'high'; });
+        } else if (sender.track.kind === 'video') {
+          const isScreen = isVideoOn() && state.displayStream && sender.track === state.displayStream.getVideoTracks()[0];
+          const scale = isScreen ? Math.max(1, sourceVideoHeight() / plan.targetHeight) : 1;
+          parameters.encodings.forEach((encoding) => {
+            encoding.maxBitrate = isScreen ? plan.perListener : 150000;
+            encoding.maxFramerate = isScreen ? plan.fps : 5;
+            encoding.scaleResolutionDownBy = scale;
+            encoding.priority = 'medium'; encoding.networkPriority = 'medium';
+          });
+          parameters.degradationPreference = plan.smooth ? 'maintain-framerate' : 'maintain-resolution';
+        }
+        await sender.setParameters(parameters);
+      } catch (_) { /* Unsupported fields are ignored by the browser; SDP limits remain in effect. */ }
+    }
+  }
+  function retuneAll() { renderPlanHint(); for (const call of state.listenerCalls.values()) queueTune(call); }
 
   async function replaceCallTrack(call, kind, track) {
     const pc = call && call.peerConnection; if (!pc || !pc.getSenders) return false;
     const sender = pc.getSenders().find((item) => item.track && item.track.kind === kind);
     if (!sender) return false;
-    await sender.replaceTrack(track); if (kind === 'audio') await tuneAudioSender(call); return true;
+    await sender.replaceTrack(track); await queueTune(call); return true;
   }
 
   async function updateOutboundTracks(reason) {
     if (!state.broadcasting) return;
     const tracks = currentTracks(); state.outboundStream = new MediaStream([tracks.audio, tracks.video]);
     const results = await Promise.allSettled([...state.listenerCalls.values()].flatMap((call) => [replaceCallTrack(call, 'audio', tracks.audio), replaceCallTrack(call, 'video', tracks.video)]));
-    sendStatusToListeners();
+    sendStatusToListeners(); retuneAll();
     const failures = results.filter((r) => r.status === 'rejected').length;
     log(`${reason}: ${state.listenerCalls.size} 接続の送信トラックを replaceTrack で更新しました${failures ? `（${failures} 件失敗）` : ''}。`, failures ? 'fail' : 'ok');
   }
 
-  function updateCount() { ui.listenerCount.textContent = String(state.listenerCalls.size); }
+  function updateCount() { ui.listenerCount.textContent = String(state.listenerCalls.size); retuneAll(); }
   function removeListener(peerId) { state.listenerCalls.delete(peerId); state.dataConnections.delete(peerId); updateCount(); }
+
+  // ---- Live outbound statistics (diagnostics) ----------------------------------------
+  const statsPrev = new Map();
+  async function collectSendStats() {
+    if (!state.broadcasting || !state.listenerCalls.size) { ui.sendStats.textContent = '送信統計: 待機中'; ui.sendStats.className = 'send-stats'; return; }
+    let totalBits = 0, fpsSum = 0, fpsCount = 0; const limits = { cpu: 0, bandwidth: 0 };
+    let minHeight = Infinity;
+    await Promise.all([...state.listenerCalls.entries()].map(async ([peerId, call]) => {
+      const pc = call.peerConnection; if (!pc || !pc.getStats) return;
+      try {
+        const report = await pc.getStats();
+        report.forEach((s) => {
+          if (s.type !== 'outbound-rtp' || s.kind !== 'video') return;
+          const key = `${peerId}:${s.id}`; const prev = statsPrev.get(key);
+          if (prev && s.timestamp > prev.timestamp) totalBits += ((s.bytesSent - prev.bytesSent) * 8) / ((s.timestamp - prev.timestamp) / 1000);
+          statsPrev.set(key, { bytesSent: s.bytesSent, timestamp: s.timestamp });
+          if (typeof s.framesPerSecond === 'number') { fpsSum += s.framesPerSecond; fpsCount += 1; }
+          if (s.frameHeight) minHeight = Math.min(minHeight, s.frameHeight);
+          if (s.qualityLimitationReason === 'cpu') limits.cpu += 1; else if (s.qualityLimitationReason === 'bandwidth') limits.bandwidth += 1;
+        });
+      } catch (_) {}
+    }));
+    const fps = fpsCount ? fpsSum / fpsCount : 0;
+    const limitText = limits.cpu ? `CPU 制限 ${limits.cpu} 件` : limits.bandwidth ? `帯域制限 ${limits.bandwidth} 件` : '制限なし';
+    ui.sendStats.textContent = `映像送信 計 ${(totalBits / 1e6).toFixed(1)} Mbps · 平均 ${fps.toFixed(0)} fps${Number.isFinite(minHeight) ? ` · 最低 ${minHeight}p` : ''} · ${limitText}`;
+    ui.sendStats.className = `send-stats${limits.cpu || limits.bandwidth || (fpsCount && fps < 15) ? ' warn' : ''}`;
+  }
+  setInterval(collectSendStats, 2000);
 
   function callListener(peerId) {
     if (!state.peer || !state.broadcasting || state.listenerCalls.has(peerId)) return;
@@ -352,7 +451,10 @@
     state.listenerCalls.set(peerId, call); updateCount();
     call.on('error', (error) => { log(`リスナー接続エラー: ${friendlyError(error)}`, 'fail'); removeListener(peerId); });
     call.on('close', () => { if (state.listenerCalls.get(peerId) === call) { removeListener(peerId); log('リスナーが切断しました。', 'info'); } });
-    setTimeout(() => tuneAudioSender(call), 350);
+    // Apply encoder caps as soon as the transport is up (and once more as a fallback).
+    const pc = call.peerConnection;
+    if (pc) pc.addEventListener('connectionstatechange', () => { if (pc.connectionState === 'connected') queueTune(call); });
+    setTimeout(() => queueTune(call), 350); setTimeout(() => queueTune(call), 2500);
     log('リスナーへのステレオストリームを開始しました。', 'ok');
   }
 
@@ -411,7 +513,7 @@
 
   function stopBroadcast() {
     for (const call of state.listenerCalls.values()) call.close(); for (const conn of state.dataConnections.values()) conn.close();
-    state.listenerCalls.clear(); state.dataConnections.clear(); updateCount();
+    state.listenerCalls.clear(); state.dataConnections.clear(); statsPrev.clear(); updateCount();
     if (state.peer) { state.peer.destroy(); state.peer = null; }
     state.broadcasting = false; state.outboundStream = null; setBroadcastUI(false); ui.start.disabled = false; ui.start.innerHTML = '配信開始 <span style="opacity:.72">(Start Streaming)</span>';
     setMessage(ui.broadcastMessage, '配信を終了しました。入力・画面はステージング用に維持されています。'); log('配信を終了しました。', 'info');
@@ -424,18 +526,22 @@
     if (state.broadcasting) updateOutboundTracks(`モードを「${modeLabel()}」へ変更`);
   }
 
+  // Throttled to ~30 Hz with a reused buffer: the host encodes one stream per listener,
+  // so main-thread/CPU time is kept for the video encoders.
+  let lastMeterAt = 0; const meterBuffers = {};
   function dbFromAnalyser(analyser) {
     if (!analyser) return { percent: 0, db: -Infinity };
-    const samples = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(samples); let sum = 0;
+    const samples = meterBuffers[analyser.fftSize] || (meterBuffers[analyser.fftSize] = new Uint8Array(analyser.fftSize)); analyser.getByteTimeDomainData(samples); let sum = 0;
     for (const value of samples) { const normalized = (value - 128) / 128; sum += normalized * normalized; }
     const rms = Math.sqrt(sum / samples.length); const db = rms > 0.00001 ? 20 * Math.log10(rms) : -Infinity;
     return { percent: Math.max(1.5, Math.min(100, ((db + 60) / 60) * 100)), db };
   }
-  function renderMeters() {
+  function renderMeters(now) {
+    requestAnimationFrame(renderMeters);
+    if (document.hidden || now - lastMeterAt < 33) return; lastMeterAt = now;
     const left = dbFromAnalyser(state.audioPipeline && state.audioPipeline.analyserL), right = dbFromAnalyser(state.audioPipeline && state.audioPipeline.analyserR);
     ui.meterL.style.height = `${left.percent}%`; ui.meterR.style.height = `${right.percent}%`;
     ui.dbL.textContent = Number.isFinite(left.db) ? `${left.db.toFixed(1)} dB` : '−∞ dB'; ui.dbR.textContent = Number.isFinite(right.db) ? `${right.db.toFixed(1)} dB` : '−∞ dB';
-    requestAnimationFrame(renderMeters);
   }
 
   ui.screenButton.addEventListener('click', chooseScreen);
@@ -444,6 +550,9 @@
   ui.audioTest.addEventListener('click', () => { state.testActive = !state.testActive; ensureAudioContext(); ui.audioTest.textContent = state.testActive ? '音声テスト中 — 入力を確認' : '音声テストを開始'; setMessage(ui.deviceMessage, state.testActive ? 'L/R VU メーターを確認してください。テスト音声は出力されません。' : '入力モニターを停止しました。'); });
   ui.modeGrid.addEventListener('click', (event) => { const target = event.target.closest('[data-mode]'); if (target) setMode(target.dataset.mode); });
   ui.start.addEventListener('click', startBroadcast); ui.stop.addEventListener('click', stopBroadcast);
+  ui.uplink.addEventListener('change', () => { retuneAll(); log(`上り帯域の目安を ${ui.uplink.options[ui.uplink.selectedIndex].text} に設定しました。`, 'info'); });
+  ui.quality.addEventListener('change', () => { if (state.displayStream) applyContentHint(state.displayStream.getVideoTracks()[0]); retuneAll(); log(`映像の優先を「${ui.quality.options[ui.quality.selectedIndex].text}」に変更しました。`, 'info'); });
+  renderPlanHint();
   ui.copy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(ui.shareUrl.value); ui.copy.textContent = 'コピーしました'; setTimeout(() => { ui.copy.textContent = 'URLをコピー'; }, 1600); } catch (_) { ui.shareUrl.select(); document.execCommand('copy'); ui.copy.textContent = 'コピーしました'; } });
   navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => enumerateAudioDevices().catch(() => {}));
   if (!window.isSecureContext && location.hostname !== 'localhost') { setBadge(ui.secureBadge, 'HTTPS REQUIRED', 'error'); setMessage(ui.deviceMessage, '画面共有とマイク入力には HTTPS または localhost が必要です。', 'error'); }
