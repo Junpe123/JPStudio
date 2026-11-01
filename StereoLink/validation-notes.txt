@@ -1,0 +1,8 @@
+Validation notes
+
+- Broadcaster opened successfully from file:///home/ubuntu/listento-p2p/index.html in the sandbox browser.
+- The dark DAW-inspired layout rendered as intended, including the staging preview, separate L/R meters, delivery mode controls, room input, streaming action, and responsive panel arrangement.
+- The sandbox browser exposed no audio input devices, so the visible INPUT ERROR state is expected for this environment; the application gives a clear Japanese error message rather than failing silently.
+- Browser review timestamp: 2026-09-09.
+
+- Listener opened successfully from file:///home/ubuntu/listento-p2p/player.html?room=mix-demo-session in the sandbox browser. The first-click autoplay gate, room ID, connection badge, responsive video stage, fullscreen control, stereo output controls, L/R meter summary, and vertical page flow all rendered correctly.
